@@ -85,7 +85,7 @@ def get_reports():
         browser.links.find_by_partial_href('#tab-relatorios').click()
         report_selector = browser.find_by_id('report')
         report_selector.find_by_text('Atendimentos concluídos').click()
-        print('⏳ Gerando relatório. Aguarde...')
+        print('⏳ Gerando relatório. Por favor aguarde...')
         browser.visit(f'https://sga.economia.gov.br/novosga.reports/report?report=3&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
         
 
@@ -100,14 +100,17 @@ def get_reports():
             uf = state_cape[-2:]
 
         table = browser.find_by_tag('table').first
-        print(f'⏳ Lendo tabela/relatório de atendimentos concluídos da CAPE-{uf}...')
+        
+        print(f'⏳ Lendo tabela/relatório de atendimentos concluídos da CAPE-{uf}. Esse processo pode demorar um pouco...')
+        
         for row in table.find_by_tag('tr'):
             data_cells = row.find_by_tag('td')
-            for cell in data_cells:
-                if cell.text != '' and 'Observação' not in cell.text and not cell.find_by_tag('table'):
-                    completed_services_rows.append([cell.text])
-                    print(completed_services_rows)
-                    print()
+            
+            if data_cells and len(data_cells) == 9:
+                row_data = [cell.text for cell in data_cells if 'Total' not in cell.text]
+                completed_services_rows.append(row_data)
+                print(row_data)
+                    
 
         print(f'✅ Leitura finalizada. Partindo para a próxima unidade...')
 
