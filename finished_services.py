@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 from time import sleep
 from dotenv import load_dotenv
 from splinter import Browser
+from tqdm import tqdm
 
 locale.setlocale(locale.LC_TIME,  'pt_BR.utf8')
 actual_date = datetime.now()
@@ -43,7 +44,7 @@ states = {
     }
 
 completed_services_rows = [
-    ['Senha', 'Data', 'Chamada', 'Início', 'Fim', 'Duração', 'Permanência', 'Serviço Triado', 'Atendente']
+    ['Senha', 'Data', 'Chamada', 'Início', 'Fim', 'Duração', 'Permanência', 'Serviço Triado', 'Atendente', 'Estado']
 ]
 
 browser = Browser('chrome', fullscreen=True)
@@ -62,8 +63,8 @@ def get_reports():
 
     browser.find_by_id('dialog-unidade').click()
 
-    for i in range(1, len(cape_units)):
-        sleep(3)
+    for i in tqdm(range(1, len(cape_units)), desc="Progresso total", ncols=90, colour='green'):
+        sleep(5)
 
         browser.find_by_css('.nav-link').click()
 
@@ -78,42 +79,39 @@ def get_reports():
         cape_units_selector.find_by_value(cape_units[i].value).click()
         browser.find_by_text('Enviar').click()
 
-        sleep(2)
+        sleep(3)
 
         browser.find_by_css('.nav-link').click()
         browser.links.find_by_partial_text('Relatórios').click()
         browser.links.find_by_partial_href('#tab-relatorios').click()
         report_selector = browser.find_by_id('report')
         report_selector.find_by_text('Atendimentos concluídos').click()
+
         print('⏳ Gerando relatório. Por favor aguarde...')
+        
         browser.visit(f'https://sga.economia.gov.br/novosga.reports/report?report=3&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
         
-
         sleep(3)
     
         state_cape = browser.find_by_tag('h2').first.value
 
-        uf = ''
-        if state_cape == 'CAPE - GO/TO':
-            uf = state_cape[-5:]
-        else:
-            uf = state_cape[-2:]
+        uf = state_cape[-5:] if 'GO/TO' in state_cape else state_cape[-2:]
 
         table = browser.find_by_tag('table').first
+        rows = table.find_by_tag('tr')
+    
+        print(f'⏳ Lendo tabela/relatório de atendimentos concluídos da CAPE-{uf}. São {len(rows)} linhas. Esse processo pode demorar um pouco...')
         
-        print(f'⏳ Lendo tabela/relatório de atendimentos concluídos da CAPE-{uf}. Esse processo pode demorar um pouco...')
-        
-        for row in table.find_by_tag('tr'):
+        for row in tqdm(rows, desc='Progresso da unidade', ncols=90, colour='green'):
             data_cells = row.find_by_tag('td')
             
-            if data_cells and len(data_cells) == 9:
-                row_data = [cell.text for cell in data_cells if 'Total' not in cell.text]
+            if len(data_cells) == 9 and all('Total' not in cell.text for cell in data_cells):
+                row_data = [cell.text for cell in data_cells] + [states[uf]]
                 completed_services_rows.append(row_data)
-                print(row_data)
                     
 
         print(f'✅ Leitura finalizada. Partindo para a próxima unidade...')
-
+    
         browser.back()
 
 browser.visit('https://sga.economia.gov.br/')
