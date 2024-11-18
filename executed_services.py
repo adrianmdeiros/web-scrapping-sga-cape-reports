@@ -7,6 +7,7 @@ from time import sleep
 from dotenv import load_dotenv
 from splinter import Browser
 from tqdm import tqdm
+from finished_services import get_reports
 
 locale.setlocale(locale.LC_TIME,  'pt_BR.utf8')
 actual_date = datetime.now()

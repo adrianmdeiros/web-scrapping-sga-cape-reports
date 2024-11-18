@@ -49,7 +49,7 @@ completed_services_rows = [
 
 browser = Browser('chrome', fullscreen=True)
 
-def get_reports():
+def get_all_finished_services():
     browser.find_by_css('.nav-link').click()
     browser.links.find_by_partial_text('Trocar unidade').click()
 
@@ -105,8 +105,8 @@ def get_reports():
         for row in tqdm(rows, desc='Progresso da unidade', ncols=90, colour='green'):
             data_cells = row.find_by_tag('td')
             
-            if len(data_cells) == 9 and all('Total' not in cell.text for cell in data_cells):
-                row_data = [cell.text for cell in data_cells] + [states[uf]]
+            if len(data_cells) == 9:
+                row_data = [cell.text for cell in data_cells if 'Total' not in cell.text] + [states[uf]]
                 completed_services_rows.append(row_data)
                     
 
@@ -126,7 +126,7 @@ browser.find_by_text('Entrar').click()
 
 sleep(3)
 
-get_reports()
+get_all_finished_services()
 
 sleep(3)
 
@@ -144,7 +144,7 @@ browser.find_by_text('Entrar').click()
 
 sleep(3)
 
-get_reports()
+get_all_finished_services()
 
 print(f'✅ Todas as tabelas/relatórios lidos com sucesso.')
 print(f'⏳ Gerando arquivo Excel...')
