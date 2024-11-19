@@ -7,7 +7,6 @@ from time import sleep
 from dotenv import load_dotenv
 from splinter import Browser
 from tqdm import tqdm
-from finished_services import get_reports
 
 locale.setlocale(locale.LC_TIME,  'pt_BR.utf8')
 actual_date = datetime.now()
@@ -112,7 +111,7 @@ def click_perfil_menu(browser):
 def logout(browser):
     browser.links.find_by_partial_text('Sair').click()
 
-def get_all_executed_services(browser):
+def reset_unit_selection_scraping(browser):
     click_nav_menu(browser)
     open_change_unit_dialog(browser)
 
@@ -121,34 +120,47 @@ def get_all_executed_services(browser):
     cape_unit_selector = get_unit_selector(browser)
     cape_units = get_units(cape_unit_selector)
     select_unit(cape_unit_selector, '')
-
+    
     sleep(2)
 
     close_change_unit_dialog(browser)
+
+    return cape_units
+
+def change_cape_unit_scraping(browser, index):
+    sleep(3)
+
+    click_nav_menu(browser)
     
+    sleep(2)
+
+    open_change_unit_dialog(browser)
+
+    sleep(2)
+
+    cape_unit_selector = get_unit_selector(browser)
+    cape_units = get_units(cape_unit_selector)
+    select_unit(cape_unit_selector, cape_units[index].value)
+    submit_unit_selection(browser)
+
+def select_executed_services_report(browser):
+    click_nav_menu(browser)
+    open_reports_section(browser)
+    click_reports_tab(browser)
+    
+    report_selector = get_report_selector(browser)
+    select_report(report_selector, 'Serviços executados')
+
+def get_all_executed_services(browser):
+    cape_units = reset_unit_selection_scraping(browser)
+
     for i in tqdm(range(1, len(cape_units)), desc="Progresso total", ncols=90, colour='green'):
+        change_cape_unit_scraping(browser, i)
+
         sleep(3)
 
-        click_nav_menu(browser)
-
-        sleep(2)
-
-        open_change_unit_dialog(browser)
-
-        sleep(2)
+        select_executed_services_report(browser)
         
-        cape_unit_selector = get_unit_selector(browser)
-        cape_units = get_units(cape_unit_selector)
-        select_unit(cape_unit_selector, cape_units[i].value)
-        submit_unit_selection(browser)
-
-        sleep(3)
-
-        click_nav_menu(browser)
-        open_reports_section(browser)
-        click_reports_tab(browser)
-        report_selector = get_report_selector(browser)
-        select_report(report_selector, 'Serviços executados')
         visit(browser, f'https://sga.economia.gov.br/novosga.reports/report?report=2&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
 
         sleep(2)
@@ -160,9 +172,9 @@ def get_all_executed_services(browser):
         table = get_report_table(browser)
         rows = get_report_table_rows(table)
 
-        print(f'⏳Lendo tabela/relatório de serviços executados da CAPE-{uf}...')
+        print(f'⏳Lendo tabela/relatório de serviços executados da CAPE-{uf}.')
 
-        for row in tqdm(rows, desc="Progresso", ncols=90, colour='green'):
+        for row in tqdm(rows, desc="Progresso da unidade", ncols=90, colour='green'):
             data_cells = get_data_cells(row)
 
             if data_cells:
@@ -171,8 +183,10 @@ def get_all_executed_services(browser):
                 executed_services_rows.append(
                     [states[uf], f'01/{prev_month_number}/{year}'] + [int(cell.text) if cell.text.isdigit() else cell.text for cell in data_cells]
                 )
-        print(f'✅Leitura finalizada. Partindo para a próxima unidade...')
+        print(f'✅Leitura finalizada. Partindo para a próxima unidade.')
+
         back(browser)
+    
 
 executed_services_rows = [['Estado', 'mês/ano', 'Serviço', 'Quantidade']]
 
@@ -192,7 +206,7 @@ get_all_executed_services(browser)
 
 sleep(3)
 
-print(f'👽Iniciando o misterioso caso do PARÁ...')
+print(f'👽Iniciando o misterioso caso do PARÁ.')
 
 click_perfil_menu(browser)
 logout(browser)
@@ -206,7 +220,7 @@ sleep(3)
 
 get_all_executed_services(browser)
 
-print(f'⏳Gerando arquivo Excel...')
+print(f'⏳Gerando arquivo Excel.')
 
 executed_services_table = pandas.DataFrame(executed_services_rows)
 
