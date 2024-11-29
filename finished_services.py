@@ -97,9 +97,6 @@ def get_all_finished_services():
 
         uf = state_cape[-5:] if 'GO/TO' in state_cape else state_cape[-2:]
 
-        # table = browser.find_by_tag('table').first
-        # rows = table.find_by_tag('tr')
-    
         script = """
             const rows = Array.from(document.querySelectorAll('table tr'));
             return rows
@@ -109,19 +106,13 @@ def get_all_finished_services():
         """
         rows = browser.execute_script(script)
 
-        print(f'⏳Lendo tabela/relatório de atendimentos concluídos da {state_cape}. São {len(rows)} linhas. Esse processo pode demorar um pouco.')
+        print(f'⏳Lendo tabela/relatório de atendimentos concluídos da {state_cape}. São {len(rows)} linhas.')
         
         for row in rows:
-            row_data = [row] +  [states[uf]]
-            completed_services_rows.extend(row_data)
-
-        # all_data_cells = [row.find_by_tag('td') for row in tqdm(rows, desc='Lendo todas as células', ncols=90, colour='green')]
-        # for data_cells in tqdm(all_data_cells, desc='Progresso da unidade', ncols=90, colour='green'):
-        #     if len(data_cells) == 9:
-        #         row_data = [cell.text for cell in data_cells if 'Total' not in cell.text] + [states[uf]]
-        #         print(row_data)
-        #         completed_services_rows.append(row_data)
-                    
+            if 'Total' not in row:
+                row_data = [row] + [[states[uf]]]
+                print(row_data)
+                completed_services_rows.append(row_data)
 
         print(f'✅Leitura finalizada. Partindo para a próxima unidade.')
     
