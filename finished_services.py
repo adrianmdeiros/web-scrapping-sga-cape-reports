@@ -68,11 +68,11 @@ def get_all_finished_services():
 
         browser.find_by_css('.nav-link').click()
 
-        sleep(2)
+        sleep(3)
 
         browser.links.find_by_partial_text('Trocar unidade').click()
 
-        sleep(2)
+        sleep(3)
         
         cape_units_selector = browser.find_by_id('unidade')
         cape_units = cape_units_selector.find_by_tag('option')
@@ -87,7 +87,7 @@ def get_all_finished_services():
         report_selector = browser.find_by_id('report')
         report_selector.find_by_text('Atendimentos concluídos').click()
 
-        print('⏳ Gerando relatório. Por favor aguarde...')
+        print('⏳Gerando relatório. Por favor aguarde.')
         
         browser.visit(f'https://sga.economia.gov.br/novosga.reports/report?report=3&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
         
@@ -97,20 +97,33 @@ def get_all_finished_services():
 
         uf = state_cape[-5:] if 'GO/TO' in state_cape else state_cape[-2:]
 
-        table = browser.find_by_tag('table').first
-        rows = table.find_by_tag('tr')
+        # table = browser.find_by_tag('table').first
+        # rows = table.find_by_tag('tr')
     
-        print(f'⏳ Lendo tabela/relatório de atendimentos concluídos da CAPE-{uf}. São {len(rows)} linhas. Esse processo pode demorar um pouco...')
+        script = """
+            const rows = Array.from(document.querySelectorAll('table tr'));
+            return rows
+                .filter(row => row.querySelectorAll('td').length === 9)
+                .map(row => Array.from(row.querySelectorAll('td'))
+                    .map(td => td.innerText));
+        """
+        rows = browser.execute_script(script)
+
+        print(f'⏳Lendo tabela/relatório de atendimentos concluídos da {state_cape}. São {len(rows)} linhas. Esse processo pode demorar um pouco.')
         
-        for row in tqdm(rows, desc='Progresso da unidade', ncols=90, colour='green'):
-            data_cells = row.find_by_tag('td')
-            
-            if len(data_cells) == 9:
-                row_data = [cell.text for cell in data_cells if 'Total' not in cell.text] + [states[uf]]
-                completed_services_rows.append(row_data)
+        for row in rows:
+            row_data = [row] +  [states[uf]]
+            completed_services_rows.extend(row_data)
+
+        # all_data_cells = [row.find_by_tag('td') for row in tqdm(rows, desc='Lendo todas as células', ncols=90, colour='green')]
+        # for data_cells in tqdm(all_data_cells, desc='Progresso da unidade', ncols=90, colour='green'):
+        #     if len(data_cells) == 9:
+        #         row_data = [cell.text for cell in data_cells if 'Total' not in cell.text] + [states[uf]]
+        #         print(row_data)
+        #         completed_services_rows.append(row_data)
                     
 
-        print(f'✅ Leitura finalizada. Partindo para a próxima unidade...')
+        print(f'✅Leitura finalizada. Partindo para a próxima unidade.')
     
         browser.back()
 
@@ -130,7 +143,7 @@ get_all_finished_services()
 
 sleep(3)
 
-print(f'👽 Iniciando o misterioso caso do PARÁ...')
+print(f'👽Iniciando o misterioso caso do PARÁ.')
 
 browser.find_by_xpath('/html/body/header/nav/div/ul[2]/li[3]').click()
 browser.links.find_by_partial_text('Sair').click()
@@ -146,8 +159,8 @@ sleep(3)
 
 get_all_finished_services()
 
-print(f'✅ Todas as tabelas/relatórios lidos com sucesso.')
-print(f'⏳ Gerando arquivo Excel...')
+print(f'✅Todas as tabelas/relatórios lidos com sucesso.')
+print(f'⏳ Gerando arquivo Excel.')
 
 completed_services_table = pandas.DataFrame(completed_services_rows)
 
@@ -156,6 +169,6 @@ month_name = date_object.strftime('%B')
 
 completed_services_table.to_excel(f'ATENDIMENTOS CONCLUIDOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
 
-print(f'✅ Arquivo Excel criado com sucesso!🚀')
+print(f'✅Arquivo Excel criado com sucesso!🚀')
 
 browser.quit()
