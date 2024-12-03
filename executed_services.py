@@ -163,26 +163,29 @@ def get_all_executed_services(browser):
         
         visit(browser, f'https://sga.economia.gov.br/novosga.reports/report?report=2&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
 
-        sleep(2)
+        sleep(3)
 
         state_cape = get_unit_state(browser)
 
         uf = get_unit_uf(state_cape)
 
-        table = get_report_table(browser)
-        rows = get_report_table_rows(table)
+        script = """
+            const rows = Array.from(document.querySelectorAll('table tr'));
+            return rows
+                .map(row => Array.from(row.querySelectorAll('td'))
+                    .map(cell => cell.innerText))
+                    .filter(cells => cells.every(text => !text.includes('Total'))
+                );
+        """
+        data_cells = browser.execute_script(script)
 
-        print(f'⏳Lendo tabela/relatório de serviços executados da CAPE-{uf}.')
+        print(f'⏳Lendo tabela/relatório de serviços executados da {state_cape}.')
 
-        for row in tqdm(rows, desc="Progresso da unidade", ncols=90, colour='green'):
-            data_cells = get_data_cells(row)
-
-            if data_cells:
-                if data_cells.first.value == '':
-                    continue
-                executed_services_rows.append(
-                    [states[uf], f'01/{prev_month_number}/{year}'] + [int(cell.text) if cell.text.isdigit() else cell.text for cell in data_cells]
-                )
+        for cells in data_cells:
+            if cells:
+                row_data =  [states[uf], f'01/{prev_month_number}/{year}'] + [int(cell) if cell.isdigit() else cell for cell in cells]
+                print(f'✅Linha lida: {row_data}')
+                executed_services_rows.append(row_data)
         print(f'✅Leitura finalizada. Partindo para a próxima unidade.')
 
         back(browser)
@@ -193,6 +196,8 @@ executed_services_rows = [['Estado', 'mês/ano', 'Serviço', 'Quantidade']]
 browser = set_browser('chrome')
 
 visit(browser,'https://sga.economia.gov.br/')
+
+sleep(3)
 
 load_dotenv(override=True)
 username = os.getenv('USERNAME')

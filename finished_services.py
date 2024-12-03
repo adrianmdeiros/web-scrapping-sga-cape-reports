@@ -87,7 +87,7 @@ def get_all_finished_services():
         report_selector = browser.find_by_id('report')
         report_selector.find_by_text('Atendimentos concluídos').click()
 
-        print('⏳Gerando relatório. Por favor aguarde.')
+        print(f'\n⏳Gerando relatório. Por favor aguarde.')
         
         browser.visit(f'https://sga.economia.gov.br/novosga.reports/report?report=3&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
         
@@ -110,7 +110,8 @@ def get_all_finished_services():
         
         for row in rows:
             if 'Total' not in row:
-                row_data = [row] + [[states[uf]]]
+                row_data = row + [states[uf]]
+                print(f'✅Linha lida: {row_data}')
                 completed_services_rows.append(row_data)
 
         print(f'✅Leitura finalizada. Partindo para a próxima unidade.')
