@@ -197,7 +197,7 @@ browser = set_browser('chrome')
 
 visit(browser,'https://sga.economia.gov.br/')
 
-sleep(3)
+sleep(5)
 
 load_dotenv(override=True)
 username = os.getenv('USERNAME')

@@ -120,6 +120,8 @@ def get_all_finished_services():
 
 browser.visit('https://sga.economia.gov.br/')
 
+sleep(5)
+
 load_dotenv(override=True)
 username = os.getenv('USERNAME')
 password = os.getenv('PASSWORD')
