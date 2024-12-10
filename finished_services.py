@@ -152,7 +152,7 @@ sleep(3)
 
 get_all_finished_services()
 
-print(f'✅Todas as tabelas/relatórios lidos com sucesso.')
+print(f'✅ Todas as tabelas/relatórios lidos com sucesso.')
 print(f'⏳ Gerando arquivo Excel.')
 
 completed_services_table = pandas.DataFrame(completed_services_rows)
@@ -160,7 +160,11 @@ completed_services_table = pandas.DataFrame(completed_services_rows)
 date_object = datetime.strptime(f'01/{prev_month_number}/{year}', '%d/%m/%Y')
 month_name = date_object.strftime('%B')
 
-completed_services_table.to_excel(f'ATENDIMENTOS CONCLUIDOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
+def format_excel(styler):
+    styler.set_properties(**{"font-size": "10pt", "font-family": "Segoe UI"})
+    return styler
+
+completed_services_table.style.pipe(format_excel).to_excel(f'ATENDIMENTOS CONCLUIDOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
 
 print(f'✅Arquivo Excel criado com sucesso!🚀')
 
