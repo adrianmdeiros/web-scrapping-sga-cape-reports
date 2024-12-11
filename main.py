@@ -52,11 +52,11 @@ BR_STATES = {
         'SE': 'SERGIPE'
 }
 
-
 def set_browser(browser):
     return Browser(browser, fullscreen=True)
 
 def click_nav_menu(browser): 
+    sleep(3)
     browser.find_by_css('.nav-link').click()
 
 def open_change_unit_dialog(browser):
@@ -104,9 +104,6 @@ def get_report_table(browser):
 def get_report_table_rows(report_table):
     return report_table.find_by_tag('tr')
 
-def get_data_cells(row):
-    return row.find_by_tag('td')
-
 def back(browser):
     browser.back()
 
@@ -125,33 +122,33 @@ def reset_unit_selection_scraping(browser):
     click_nav_menu(browser)
     open_change_unit_dialog(browser)
 
-    sleep(2)
+    sleep(3)
 
     cape_unit_selector = get_unit_selector(browser)
     cape_units = get_units(cape_unit_selector)
     select_unit(cape_unit_selector, '')
     
-    sleep(2)
+    sleep(3)
 
     close_change_unit_dialog(browser)
 
     return cape_units
 
 def change_cape_unit_scraping(browser, index):
-    sleep(3)
-
     click_nav_menu(browser)
     
-    sleep(2)
+    sleep(3)
 
     open_change_unit_dialog(browser)
 
-    sleep(2)
+    sleep(3)
 
     cape_unit_selector = get_unit_selector(browser)
     cape_units = get_units(cape_unit_selector)
     select_unit(cape_unit_selector, cape_units[index].value)
     submit_unit_selection(browser)
+
+    return cape_units[index].text
 
 def select_report_by_name(browser, name):
     click_nav_menu(browser)
@@ -161,25 +158,27 @@ def select_report_by_name(browser, name):
     report_selector = get_report_selector(browser)
     select_report(report_selector, name)
 
-def generate_report(browser, name, i):
-    change_cape_unit_scraping(browser, i)
+def generate_report(browser, name, report_id, i):
+    cape_unit = change_cape_unit_scraping(browser, i)
 
     sleep(3)
 
     select_report_by_name(browser, name)
     
-    visit(browser, f'https://sga.economia.gov.br/novosga.reports/report?report=2&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
+    print(f'\n⏳ Gerando relatório da {cape_unit}...')
+
+    visit(browser, f'https://sga.economia.gov.br/novosga.reports/report?report={report_id}&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
     
     sleep(3)
     
     state_cape = get_unit_state(browser)
     uf = get_unit_uf(state_cape)
 
-    return uf, state_cape
+    return uf
 
 def get_executed_services_reports(browser, cape_units):
-    for i in tqdm(range(1, len(cape_units)), desc="Progresso total", ncols=90, colour='green'):
-        uf, state_cape = generate_report(browser, 'Serviços Executados', i)
+    for i in tqdm(range(1, len(cape_units)), desc="Progresso Total", ncols=90, colour='green'):
+        uf = generate_report(browser, 'Serviços executados', 2, i)
         
         script = """
             const rows = Array.from(document.querySelectorAll('table tr'));
@@ -191,15 +190,14 @@ def get_executed_services_reports(browser, cape_units):
         """
         data_cells = browser.execute_script(script)
 
-        print(f'⏳ Lendo tabela/relatório de serviços executados da {state_cape}...')
+        print(f'⏳ Obtendo dados dos serviços executados... São {len(data_cells)} linhas.')
 
         for cells in data_cells:
             if cells:
                 row_data =  [BR_STATES[uf], f'01/{prev_month_number}/{year}'] + [int(cell) if cell.isdigit() else cell for cell in cells]
-                print(f'✅ Linha lida: {row_data}')
                 executed_services_rows.append(row_data)
 
-        print(f'✅ Leitura finalizada. Partindo para a próxima unidade...')
+        print(f'✅ Leitura finalizada.')
 
         back(browser)
 
@@ -219,7 +217,7 @@ def get_parah_executed_services_report(browser):
 def executed_services_scraping(browser):
     visit(browser,'https://sga.economia.gov.br/')
 
-    sleep(3)
+    sleep(5)
 
     login(browser, username, password)
 
@@ -234,13 +232,58 @@ def executed_services_scraping(browser):
     get_parah_executed_services_report(browser)
 
 def get_finished_services_reports(browser, cape_units):
-    pass
+    for i in tqdm(range(1, len(cape_units)), desc="Progresso Total", ncols=90, colour='green'):
+        uf = generate_report(browser, 'Atendimentos concluídos', 3, i)
+        
+        script = """
+            const rows = Array.from(document.querySelectorAll('table tr'));
+            return rows
+                .filter(row => row.querySelectorAll('td').length === 9)
+                .map(row => Array.from(row.querySelectorAll('td'))
+                    .map(td => td.innerText));
+        """
+        data_cells = browser.execute_script(script)
 
-def get_parah_finished_services_report(browser, cape_units):
-    pass
+        print(f'⏳ Obtendo dados dos atendimentos concluídos... São {len(data_cells)} linhas.')
+        
+        for cell in data_cells:
+            if 'Total' not in cell:
+                row_data = cell + [BR_STATES[uf]]
+                finished_services_rows.append(row_data)
+
+        print(f'✅ Leitura finalizada.')
+
+        back(browser)
+
+def get_parah_finished_services_report(browser):
+    click_perfil_menu(browser)
+    logout(browser)
+
+    sleep(3)
+
+    login(browser, username_para, password)
+
+    sleep(3)
+
+    cape_units = reset_unit_selection_scraping(browser)
+    get_finished_services_reports(browser, cape_units)
 
 def finished_services_scraping(browser):
-    pass
+    visit(browser,'https://sga.economia.gov.br/')
+
+    sleep(5)
+
+    login(browser, username, password)
+
+    sleep(3)
+
+    cape_units = reset_unit_selection_scraping(browser)
+    get_finished_services_reports(browser, cape_units)
+
+    sleep(3)
+    
+    print('👽 Iniciando o caso do PARÁ...')
+    get_parah_finished_services_report(browser)
 
 def format_excel(styler):
     styler.set_properties(**{"font-size": "10pt", "font-family": "Segoe UI"})
@@ -248,40 +291,39 @@ def format_excel(styler):
 
 if __name__ == '__main__':
     executed_services_rows = [['Estado', 'mês/ano', 'Serviço', 'Quantidade']]
-    completed_services_rows = [['Senha', 'Data', 'Chamada', 'Início', 'Fim', 'Duração', 'Permanência', 'Serviço Triado', 'Atendente', 'Estado']]
+    finished_services_rows = [['Senha', 'Data', 'Chamada', 'Início', 'Fim', 'Duração', 'Permanência', 'Serviço Triado', 'Atendente', 'Estado']]
     
-    selected = questionary.select(
-        "Qual relatório você quer rodar?",
-        choices=["Serviços Executados", "Atendimentos Conluídos"]
-    ).ask()
+    while True:
+        selected = questionary.select(
+            "Qual script você deseja executar?",
+            choices=["Serviços Executados", "Atendimentos Conluídos", "Sair"]
+        ).ask()
     
-    browser = set_browser('chrome')
-    
-    if selected == "Serviços Executados":
-        executed_services_scraping(browser)
-        executed_services_table = pandas.DataFrame(executed_services_rows)
+        if selected == "Serviços Executados":
+            browser = set_browser('chrome')
+            executed_services_scraping(browser)
+            executed_services_table = pandas.DataFrame(executed_services_rows)
 
-        print(f'⏳ Gerando arquivo Excel...')
+            print(f'⏳ Gerando arquivo Excel...')
 
-        executed_services_table.style.pipe(format_excel).to_excel(f'SERVICOS EXECUTADOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
-        
-        print(f'✅ Arquivo Excel criado.')
-    
-    elif selected == "Atendimentos Conluídos":
-        finished_services_scraping(browser)
-        completed_services_table = pandas.DataFrame(completed_services_rows)
+            executed_services_table.style.pipe(format_excel).to_excel(f'SERVICOS EXECUTADOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
 
-        print(f'⏳ Gerando arquivo Excel...')
+            print(f'✅ Arquivo Excel criado.')
+            
+            browser.quit()
 
-        completed_services_table.style.pipe(format_excel).to_excel(f'ATENDIMENTOS CONCLUIDOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
+        elif selected == "Atendimentos Conluídos":
+            browser = set_browser('chrome')
+            finished_services_scraping(browser)
+            finished_services_table = pandas.DataFrame(finished_services_rows)
 
-        print(f'✅ Arquivo Excel criado.')
+            print(f'⏳ Gerando arquivo Excel...')
 
-    browser.quit()
+            finished_services_table.style.pipe(format_excel).to_excel(f'ATENDIMENTOS CONCLUIDOS CAPES {month_name.upper()} {year}.xlsx', index=False, header=False)
 
-        
-    
-    
-    
+            print(f'✅ Arquivo Excel criado.')
+            
+            browser.quit()
 
-    
+        else:
+            break
