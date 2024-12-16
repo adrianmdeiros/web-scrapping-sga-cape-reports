@@ -53,7 +53,7 @@ BR_STATES = {
 }
 
 def set_browser(browser):
-    return Browser(browser, fullscreen=True)
+    return Browser(browser, fullscreen=True, headless=True)
 
 def click_nav_menu(browser): 
     sleep(3)
