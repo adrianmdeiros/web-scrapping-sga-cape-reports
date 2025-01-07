@@ -21,6 +21,11 @@ year = actual_date.year
 prev_month = actual_date - relativedelta(months=1)
 last_day_prev_month = (prev_month.replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).day
 prev_month_number = prev_month.month
+
+# Se o mês anterior for Dezembro, o ano utilizado na geração dos relatórios precisa ser o ano anterior.
+if prev_month_number == 12:
+    year = year - 1
+
 date_object = datetime.strptime(f'01/{prev_month_number}/{year}', '%d/%m/%Y')
 month_name = date_object.strftime('%B')
 
@@ -53,7 +58,7 @@ BR_STATES = {
 }
 
 def set_browser(browser):
-    return Browser(browser, fullscreen=True, headless=True)
+    return Browser(browser, fullscreen=True)
 
 def click_nav_menu(browser): 
     sleep(3)
@@ -76,18 +81,6 @@ def submit_unit_selection(browser):
 
 def close_change_unit_dialog(browser):
     browser.find_by_id('dialog-unidade').click()
-
-def open_reports_section(browser):
-    browser.links.find_by_partial_text('Relatórios').click()
-
-def click_reports_tab(browser):
-    browser.links.find_by_partial_href('#tab-relatorios').click()
-
-def get_report_selector(browser):
-    return browser.find_by_id('report')
-
-def select_report(report_selector, text):
-    report_selector.find_by_text(text).click()
 
 def visit(browser, url):
     browser.visit(url)
@@ -150,21 +143,11 @@ def change_cape_unit_scraping(browser, index):
 
     return cape_units[index].text
 
-def select_report_by_name(browser, name):
-    click_nav_menu(browser)
-    open_reports_section(browser)
-    click_reports_tab(browser)
-    
-    report_selector = get_report_selector(browser)
-    select_report(report_selector, name)
-
-def generate_report(browser, name, report_id, i):
+def generate_report(browser, report_id, i):
     cape_unit = change_cape_unit_scraping(browser, i)
 
     sleep(3)
 
-    select_report_by_name(browser, name)
-    
     print(f'\n⏳ Gerando relatório da {cape_unit}...')
 
     visit(browser, f'https://sga.economia.gov.br/novosga.reports/report?report={report_id}&startDate=01%2F{prev_month_number}%2F{year}&endDate={last_day_prev_month}%2F{prev_month_number}%2F{year}')
@@ -178,7 +161,7 @@ def generate_report(browser, name, report_id, i):
 
 def get_executed_services_reports(browser, cape_units):
     for i in tqdm(range(1, len(cape_units)), desc="Progresso Total", ncols=90, colour='green'):
-        uf = generate_report(browser, 'Serviços executados', 2, i)
+        uf = generate_report(browser, 2, i)
         
         script = """
             const rows = Array.from(document.querySelectorAll('table tr'));
@@ -194,7 +177,7 @@ def get_executed_services_reports(browser, cape_units):
 
         for cells in data_cells:
             if cells:
-                row_data =  [BR_STATES[uf], f'01/{prev_month_number}/{year}'] + [int(cell) if cell.isdigit() else cell for cell in cells]
+                row_data = [BR_STATES[uf], f'01/{prev_month_number}/{year}'] + [int(cell) if cell.isdigit() else cell for cell in cells]
                 executed_services_rows.append(row_data)
 
         print(f'✅ Leitura finalizada.')
@@ -233,7 +216,7 @@ def executed_services_scraping(browser):
 
 def get_finished_services_reports(browser, cape_units):
     for i in tqdm(range(1, len(cape_units)), desc="Progresso Total", ncols=90, colour='green'):
-        uf = generate_report(browser, 'Atendimentos concluídos', 3, i)
+        uf = generate_report(browser, 3, i)
         
         script = """
             const rows = Array.from(document.querySelectorAll('table tr'));
