@@ -1,27 +1,27 @@
-# 🤖 Web Scraping SGA CAPE reports 
+# 🤖 Web Scraping de Relatórios (Serviços e Atendimentos) da CAPE Gerados pelo Sistema SGA 
 <br>
 
-SGA is the web system previously used to record CAPE attendances.
-This project is a web scraper that extracts data from the SGA generated reports(services) and saves it in a .xlsx file.
+SGA é o sistema web utilizado anteriormente para registro de presenças no CAPE.
+Este projeto é um web scraper que extrai dados dos relatórios (serviços) gerados pelo SGA e os salva em um arquivo .xlsx.
 
-### 🚀 Technologies
+### 🚀 Tecnologias
 
-This project was developed using these technologies:
+Este projeto foi desenvolvido usando estas tecnologias:
 
 - Python
-- Splinter (Selenium Wrapper)
+- Splinter (Wrapper do Selenium)
 - Pandas
 - Git
 - Github
 
-### 💻 How to run
-Clone the project:
+### 💻 Como Rodar
+Clone o projeto:
 
 ```bash
 git clone https://github.com/adrianmdeiros/web-scrapping-sga-cape-reports.git
 ```
 
-Assuming you have python installed run the following:
+Supondo que você tenha o python instalado, execute o seguinte:
 ```bash
 pip install -r requirements.txt
 ```
@@ -29,7 +29,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-##### This project is part of my intern experience in a Brazilian goverment agency. 
+##### Este projeto faz parte da minha experiência de estágio em uma agência governamental brasileira. 
 
-### ⚖ License
-<p> This project is licensed under <a href="https://opensource.org/license/mit/" target="_blank">The MIT License</a> </p>
+### ⚖ Licença
+<p> Este projeto está licenciado sob a <a href="https://opensource.org/license/mit/" target="_blank">Licença MIT</a> </p>
