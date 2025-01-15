@@ -2,7 +2,7 @@
 <br>
 
 SGA é o sistema web utilizado anteriormente para registro de presenças no CAPE.
-Este projeto é um web scraper que extrai dados dos relatórios (serviços) gerados pelo SGA e os salva em um arquivo .xlsx.
+Este projeto é um web scraper que extrai dados dos relatórios (serviços e atendimentos) gerados pelo SGA e os salva em um arquivo .xlsx.
 
 ### 🚀 Tecnologias
 
